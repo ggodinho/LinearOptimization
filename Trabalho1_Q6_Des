@@ -1,12 +1,12 @@
 #Trabalho 1 - Questão 6 DESAFIO
 using JuMP, GLPKMathProgInterface, DataFrames
 
-T = readtable("WDBC.dat")
+T = readtable("WDBC.dat",header=false)
 n = 400 #número de pacientes
 p = 30 #número de parâmetros
 f = T[1:n,1:p+2]
-sizeC = by(f, :M, size)
-f = sort!(f, cols = [order(:M, by = uppercase)]) #organizando por B/M
+sizeC = by(f, :2, size)
+f = sort!(f, cols = [order(:2, by = uppercase)]) #organizando por B/M
 n_B = 227
 n_M = 173
 B = f[1:n_B,1:end]
@@ -49,6 +49,10 @@ println("a = ", getvalue(a))
 println("b = ", getvalue(b))
 #println("Erro = ", getvalue(Erro))
 
+A = zeros(p)
+for i=1:p
+    A[i]=getvalue(a[i])
+end
 A = transpose(A)
 Beta = getvalue(b)
 teste = round(sum(A[j]*x[1:n,j] for j=1:p) - Beta, 0)
@@ -85,13 +89,6 @@ for i=1:n_obs, j=1:p
 end
 x_obs = norm_obs
 
-A = zeros(p)
-for i=1:p
-    A[i]=getvalue(a[i])
-end
-
-A = transpose(A)
-Beta = getvalue(b)
 teste_obs = round(sum(A[j]*x_obs[1:n_obs,j] for j=1:p) - Beta, 0)
 
 f_p_obs = 0
