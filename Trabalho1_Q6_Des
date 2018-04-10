@@ -33,7 +33,7 @@ for i=1:n, j=1:p
 end
 x = norm
 
-@expression(class, b = mean(y) - sum(a[j]*mean(x[j]) for j=1:p))
+#@expression(class, b = mean(y) - sum(a[j]*mean(x[j]) for j=1:p))
 
 # @constraint(class, [i=1:n, j=1:p], y[i] == sum(a[j]*x[i,j] for i=1:n, j=1:p) - b + Erro[i])
 @constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b + y[i] - Erro[i])
