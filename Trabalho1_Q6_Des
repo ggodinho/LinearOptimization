@@ -14,7 +14,7 @@ M = f[n_B+1:end,1:end]
 
 x = f[1:end,3:p+2] #matriz de parametros
 norm = x
-x = f[1:end,3:end] #matriz de parametros
+x = f[1:end,3:p+2] #matriz de parametros
 d = Dict(:"M" => 1, :"B" => 0)
 f[:2] = map(elt->d[elt], f[:2])
 y = f[:2] #matriz de resultados
@@ -24,7 +24,7 @@ class = Model(solver = GLPKSolverLP())
 @variable(class, Erro[i=1:n] >=0)
 @variable(class, b)
 @variable(class, a[i=1:p])
-@variable(class, par)
+@variable(class, par[j=1:p])
 a = transpose(a)
 
 #normalizando os parametros
@@ -33,24 +33,57 @@ for i=1:n, j=1:p
 end
 x = norm
 
-#@expression(class, b = mean(y) - sum(a[j]*mean(x[j]) for j=1:p))
-
-# @constraint(class, [i=1:n, j=1:p], y[i] == sum(a[j]*x[i,j] for i=1:n, j=1:p) - b + Erro[i])
 @constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b + y[i] - Erro[i])
 @constraint(class, [i=n_B+1:n, j=1:p], sum(a[j]*x[i,j] for j=1:p) >= b + y[i] + Erro[i])
-#@constraint(class, sum(a[j] for j=1:p) <= par)
-#@constraint(class, sum(-a[j] for j=1:p) <= par)
+# @constraint(class, [j=1:p], a[j] <= par[j])
+# @constraint(class, [j=1:p], -a[j] <= par[j])
 
 
-lambda = 100 #penalidade para evitar overfeature
-#@objective(class, Min, sum(Erro[i] for i=1:n) + lambda*par)
+#lambda = 20 #penalidade para evitar overfeature
+#@objective(class, Min, sum(Erro[i] for i=1:n) + lambda*sum(par[j] for j=1:p))
 @objective(class, Min, sum(Erro[i] for i=1:n))
 
 status = solve(class)
 println("Valor objetivo: ", getobjectivevalue(class))
 println("a = ", getvalue(a))
 println("b = ", getvalue(b))
-println("Erro = ", getvalue(Erro))
+#println("Erro = ", getvalue(Erro))
+
+A = transpose(A)
+Beta = getvalue(b)
+teste = round(sum(A[j]*x[1:n,j] for j=1:p) - Beta, 0)
+
+f_p = 0
+f_n = 0
+for i=1:n_B
+    if y[i] == 0
+        if teste[i] > 0
+        f_p = f_p + 1
+        end
+    else
+        if teste[i] < 1
+        f_n = f_n + 1
+        end
+    end
+end
+println("Falsos positivos modelo = ",f_p)
+println("Falsos negativos modelo = ",f_n)
+
+##################################################################################
+#Testando o Modelo
+
+OBS = T[n+1:end,1:p+2]
+n_obs = nrow(OBS)
+d = Dict(:"M" => 1, :"B" => 0)
+y_obs = map(elt->d[elt], OBS[:2])
+x_obs = OBS[1:end,3:p+2] #matriz de parametros
+norm_obs = x_obs
+x_obs = OBS[1:end,3:end] #matriz de parametros
+
+for i=1:n_obs, j=1:p
+    norm_obs[i,j]=(x_obs[i,j]-mean(x_obs[j]))/std(x_obs[j])
+end
+x_obs = norm_obs
 
 A = zeros(p)
 for i=1:p
@@ -59,20 +92,20 @@ end
 
 A = transpose(A)
 Beta = getvalue(b)
-teste = round(sum(A[j]*x[1:n,j] for j=1:p) - Beta, 0)
-Err = teste + Beta
+teste_obs = round(sum(A[j]*x_obs[1:n_obs,j] for j=1:p) - Beta, 0)
 
-f_p = 0
-
-for i=1:n_B
-    if teste[i] > 0
-        f_p = f_p + 1
+f_p_obs = 0
+f_n_obs = 0
+for i=1:n_obs
+    if y_obs[i] == 0
+        if teste_obs[i] > 0
+        f_p_obs = f_p_obs + 1
+        end
+    else
+        if teste_obs[i] < 1
+        f_n_obs = f_n_obs + 1
+        end
     end
 end
-
-f_n = 0
-for i=n_B+1:n
-    if teste[i] < 1
-        f_n = f_n + 1
-    end
-end
+println("Falsos positivos teste = ",f_p_obs)
+println("Falsos negativos teste = ",f_n_obs)
