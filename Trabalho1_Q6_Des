@@ -3,7 +3,7 @@ using JuMP, GLPKMathProgInterface, DataFrames
 
 T = readtable("WDBC.dat")
 n = 400 #número de pacientes
-p = 5 #número de parâmetros
+p = 30 #número de parâmetros
 f = T[1:n,1:p+2]
 sizeC = by(f, :M, size)
 f = sort!(f, cols = [order(:M, by = uppercase)]) #organizando por B/M
@@ -36,14 +36,14 @@ x = norm
 @expression(class, b = mean(y) - sum(a[j]*mean(x[j]) for j=1:p))
 
 # @constraint(class, [i=1:n, j=1:p], y[i] == sum(a[j]*x[i,j] for i=1:n, j=1:p) - b + Erro[i])
-@constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) >= b + y[i] - Erro[i])
-@constraint(class, [i=n_B+1:n, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b + y[i] + Erro[i])
-# @constraint(class, sum(a[j] for j=1:p) <= par)
-# @constraint(class, sum(-a[j] for j=1:p) <= par)
+@constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b + y[i] - Erro[i])
+@constraint(class, [i=n_B+1:n, j=1:p], sum(a[j]*x[i,j] for j=1:p) >= b + y[i] + Erro[i])
+#@constraint(class, sum(a[j] for j=1:p) <= par)
+#@constraint(class, sum(-a[j] for j=1:p) <= par)
 
 
-# lambda = 10000 #penalidade para evitar overfeature
-# @objective(class, Min, sum(Erro[1:n]) + lambda*par)
+lambda = 100 #penalidade para evitar overfeature
+#@objective(class, Min, sum(Erro[i] for i=1:n) + lambda*par)
 @objective(class, Min, sum(Erro[i] for i=1:n))
 
 status = solve(class)
@@ -59,20 +59,20 @@ end
 
 A = transpose(A)
 Beta = getvalue(b)
-teste = sum(A[j]*x[1:n,j] for j=1:p) - Beta
+teste = round(sum(A[j]*x[1:n,j] for j=1:p) - Beta, 0)
 Err = teste + Beta
 
 f_p = 0
 
 for i=1:n_B
-    if teste[i] < 1
+    if teste[i] > 0
         f_p = f_p + 1
     end
 end
 
 f_n = 0
 for i=n_B+1:n
-    if teste[i] > 0
+    if teste[i] < 1
         f_n = f_n + 1
     end
 end
