@@ -1,0 +1,63 @@
+#Trabalho 1 - Questão 6 DESAFIO
+using JuMP, GLPKMathProgInterface, DataFrames
+
+T = readtable("WDBC.dat")
+n = 400 #número de pacientes
+p = 30 #número de parâmetros
+f = T[1:n,1:p+2]
+sizeC = by(f, :M, size)
+f = sort!(f, cols = [order(:M, by = uppercase)]) #organizando por B/M
+n_B = 227
+n_M = 173
+B = f[1:n_B,1:end]
+M = f[n_B+1:end,1:end]
+
+x = f[1:end,3:end] #matriz de parametros
+norm = x
+x = f[1:end,3:end] #matriz de parametros
+d = Dict(:"M" => 1, :"B" => 0)
+f[:2] = map(elt->d[elt], f[:2])
+y = f[:2] #matriz de resultados
+
+class = Model(solver = GLPKSolverLP())
+
+@variable(class, Erro[i=1:n] >=0)
+@variable(class, b)
+@variable(class, a[i=1:p])
+@variable(class, par)
+a = transpose(a)
+
+#normalizando os parametros
+for i=1:n, j=1:p
+    norm[i,j]=(x[i,j]-mean(x[j]))/std(x[j])
+end
+x = norm
+
+@expression(class, b = mean(y) - sum(a[j]*mean(x[j]) for j=1:p))
+
+# @constraint(class, [i=1:n, j=1:p], y[i] == sum(a[j]*x[i,j] for i=1:n, j=1:p) - b + Erro[i])
+@constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) >= b + y[i] - Erro[i])
+@constraint(class, [i=n_B+1:n, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b + y[i] + Erro[i])
+# @constraint(class, sum(a[j] for j=1:p) <= par)
+# @constraint(class, sum(-a[j] for j=1:p) <= par)
+
+
+# lambda = 10000 #penalidade para evitar overfeature
+# @objective(class, Min, sum(Erro[1:n]) + lambda*par)
+@objective(class, Min, sum(Erro[1:n]))
+
+status = solve(class)
+println("Valor objetivo: ", getobjectivevalue(class))
+println("a = ", getvalue(a))
+println("b = ", getvalue(b))
+println("Erro = ", getvalue(Erro))
+
+A = zeros(p)
+for i=1:p
+    A[i]=getvalue(a[i])
+end
+
+A = transpose(A)
+Beta = getvalue(b)
+teste = sum(A[j]*x[320,j] for j=1:p) - Beta
+Err = teste + Beta
