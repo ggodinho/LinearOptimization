@@ -13,7 +13,7 @@ C_def[1] = 50
 C_def[2] = 100
 G_bat = 8
 X = 1000
-d = ones(Float64,t)
+d = ones(Float64,T)
 
 for i=1:n
     c[i] = 2*i
@@ -59,17 +59,18 @@ desp_c = Model(solver = GLPKSolverLP())
     g[i=1:n,t=1:T] >= 0
     def[j=1:2,t=1:T] >= 0
     g_bat[t=1:T]
-    B_bat[t=1:T]
+    B_bat[t=1:T] >=0
 end)
 @constraint(desp_c, [i=1:n, t=1:T], 0 <= g[i,t] <= G[i])
 @constraint(desp_c, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
 @constraint(desp_c, [t=1:T], sum(g[i,t] for i=1:n) + sum(def[j,t] for j=1:2) + g_bat[t] >= d[t])
 @constraint(desp_c, [t=1:T], 0 <= def[1,t] <= 0.05*d[t])
 @constraint(desp_c, [t=1:T], def[2,t] >= 0)
-@constraint(desp_c, [t=1:T-1], B_bat[t+1] == B_bat[t] - g_bat[t])
+@constraint(desp_c, [t=2:T], B_bat[t] == B_bat[t-1] - g_bat[t])
 @constraint(desp_c, [t=1:T], B_bat[t] <= G_bat)
 @constraint(desp_c, [t=1:T], g_bat[t] <= B_bat[t])
-@constraint(desp_c, [t=1:T], -B_bat[t] <= g_bat[t])
+@constraint(desp_c, B_bat[1] == G_bat - g_bat[1])
+# @constraint(desp_c, [t=1:T], -B_bat[t] <= g_bat[t])
 
 @objective(desp_c, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T))
 status_c = solve(desp_c)
