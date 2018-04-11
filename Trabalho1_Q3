@@ -1,0 +1,52 @@
+#Trabalho 1 - Questão 3
+using JuMP, GLPKMathProgInterface, Plots
+
+#Declarando as variáveis
+n = 10
+T = 24
+c = ones(Float64,n)
+G = ones(Float64,n)
+R_up = ones(Float64,n)
+R_down = ones(Float64,n)
+C_def = ones(Float64,2)
+C_def[1] = 50
+C_def[2] = 100
+G_bat = 8
+X = 1000
+d = ones(Float64,t)
+
+for i=1:n
+    c[i] = 2*i
+    G[i] = 22 - 2*i
+    R_up[i] = i
+    R_down[i] = i
+end
+
+for t=1:T
+    d[t] = 60*(1 + sin(t/12))
+end
+
+# plot(d)
+
+#Letra a)
+# desp_a = Model(solver = GLPKSolverLP())
+# @variable(desp_a, g[i=1:n,t=1:T])
+# @constraint(desp_a, [i=1:n, t=1:T], 0 <= g[i,t] <= G[i])
+# @constraint(desp_a, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
+# @constraint(desp_a, [t=1:T], sum(g[i,t] for i=1:n) >= d[t])
+# @objective(desp_a, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T))
+# status_a = solve(desp_a)
+
+#Letra b)
+desp_b = Model(solver = GLPKSolverLP())
+@variables(desp_b, begin
+    g[i=1:n,t=1:T] >= 0
+    def[j=1:2,t=1:T] >= 0
+end)
+@constraint(desp_b, [i=1:n, t=1:T], 0 <= g[i,t] <= G[i])
+@constraint(desp_b, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
+@constraint(desp_b, [t=1:T], sum(g[i,t] for i=1:n) + sum(def[j,t] for j=1:2) >= d[t])
+@constraint(desp_b, [t=1:T], 0 <= def[1,t] <= 0.05*d[t])
+@constraint(desp_b, [t=1:T], def[2,t] >= 0)
+@objective(desp_b, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T))
+status_b = solve(desp_b)
