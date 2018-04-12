@@ -68,17 +68,10 @@ for N=1:4
 
         @objective(desp_c, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T*N) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T*N) + X)
 
-
-
-
         global status_b = solve(desp_b)
-
         global f_b = getobjectivevalue(desp_b)
-
         global status_c = solve(desp_c)
-
         global f_c = getobjectivevalue(desp_c)
-
         global g_bateria = getvalue(g_bat)
         global geracao = getvalue(g)
         global deficit = getvalue(def[1,1:T]) + getvalue(def[2,1:T])
@@ -89,5 +82,3 @@ for N=1:4
              break
         end
 end
-
-# plot(d)
