@@ -1,0 +1,30 @@
+#Trabalho 1 - Questão 1, letra b
+using JuMP
+using GLPKMathProgInterface
+#workspace()
+
+m = Model(solver = GLPKSolverLP())
+ @variable(m, delta >= 0)
+ @variable(m, x1 >= 0)
+ @variable(m, x2 >= 0)
+ @variable(m, z)
+ @variable(m, w)
+ @variable(m, v)
+
+@objective(m, Min, delta)
+@constraint(m, delta >= 2*x1 + 3z)
+@constraint(m, z >= x2 - 10)
+@constraint(m, z >= -x2 + 10)
+@constraint(m, 5 >= w + v)
+@constraint(m, w >= x1 + 2)
+@constraint(m, w >= -(x1 + 2))
+@constraint(m, v >= x2)
+@constraint(m, v >= -x2)
+
+print(m)
+status = solve(m)
+
+println("Valor objetivo: ", getobjectivevalue(m))
+println("x1 = ", getvalue(x1))
+println("x2 = ", getvalue(x2))
+println("delta = ", getvalue(delta))

@@ -1,0 +1,15 @@
+#Trabalho 1 - Questão 10
+
+using Plots
+plotlyjs()
+#workspace()
+g(x)= -5x + 18
+h(x)= 3
+i(x)= 3x - 12
+plot(g,0:10)
+plot!(h)
+plot!(i)
+
+l(x)= max(g(x),h(x),i(x))
+
+plot(l, 0:10)

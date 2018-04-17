@@ -1,0 +1,32 @@
+#Trabalho 1 - Questão 2, letra a
+using JuMP
+using GLPKMathProgInterface
+#workspace()
+c1 = 100
+c2 = 150
+c3 = 200
+delta = 5000
+
+despacho = Model(solver = GLPKSolverLP())
+@variable(despacho, 0 <= g1 <= 5)
+@variable(despacho, 0 <= g2 <= 20)
+@variable(despacho, 0 <= g3 <= 12)
+@variable(despacho, -20 <= f12 <= 20)
+@variable(despacho, -20 <= f13 <= 20)
+@variable(despacho, -5 <= f23 <= 5)
+@variable(despacho, d >= 0)
+
+@objective(despacho, Min, c1*g1 + c2*g2 + c3*g3 + delta*d )
+@constraint(despacho, g1 - f12 - f13 >= 0)
+@constraint(despacho, g2 + f12 - f23 >= 0)
+@constraint(despacho, g3 + f13 + f23 >= 15 - d)
+
+
+print(despacho)
+status = solve(despacho)
+
+println("Valor objetivo: ", getobjectivevalue(despacho))
+println("g1 = ", getvalue(g1))
+println("g2 = ", getvalue(g2))
+println("g3 = ", getvalue(g3))
+println("déficit = ", getvalue(d))

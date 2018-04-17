@@ -1,0 +1,126 @@
+#Trabalho 1 - Questão 3
+using JuMP, GLPKMathProgInterface, Plots
+
+#Declarando as variáveis
+n = 10
+T = 24
+c = ones(Float64,n)
+G = ones(Float64,n)
+R_up = ones(Float64,n)
+R_down = ones(Float64,n)
+C_def = ones(Float64,2)
+C_def[1] = 50
+C_def[2] = 100
+G_bat = 8
+X = 1000
+d = ones(Float64,T)
+
+for i=1:n
+    c[i] = 2*i
+    G[i] = 22 - 2*i
+    R_up[i] = i
+    R_down[i] = i
+end
+
+for t=1:T
+    d[t] = 60*(1 + sin(t/12))
+end
+
+#---------------------------------------------------------------------------------------------
+# plot(d)
+
+#Letra a)
+# desp_a = Model(solver = GLPKSolverLP())
+# @variable(desp_a, g[i=1:n,t=1:T])
+# @constraint(desp_a, [i=1:n, t=1:T], 0 <= g[i,t] <= G[i])
+# @constraint(desp_a, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
+# @constraint(desp_a, [t=1:T], sum(g[i,t] for i=1:n) >= d[t])
+# @objective(desp_a, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T))
+# status_a = solve(desp_a)
+
+#---------------------------------------------------------------------------------------------
+#Letra b)
+desp_b = Model(solver = GLPKSolverLP())
+@variables(desp_b, begin
+    g[i=1:n,t=1:T] >= 0
+    def[j=1:2,t=1:T] >= 0
+end)
+@constraint(desp_b, [i=1:n, t=1:T], 0 <= g[i,t] <= G[i])
+@constraint(desp_b, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
+@constraint(desp_b, [t=1:T], sum(g[i,t] for i=1:n) + sum(def[j,t] for j=1:2) >= d[t])
+@constraint(desp_b, [t=1:T], 0 <= def[1,t] <= 0.05*d[t])
+@constraint(desp_b, [t=1:T], def[2,t] >= 0)
+@objective(desp_b, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T))
+status_b = solve(desp_b)
+println("Objetivo b = ", getobjectivevalue(desp_b))
+println("Déficit total b = ", sum(getvalue(def)))
+
+#---------------------------------------------------------------------------------------------
+#Letra c)
+desp_c = Model(solver = GLPKSolverLP())
+@variables(desp_c, begin
+    g[i=1:n,t=1:T] >= 0
+    def[j=1:2,t=1:T] >= 0
+    g_bat[t=1:T]
+    B_bat[t=1:T] >=0
+end)
+@constraint(desp_c, [i=1:n, t=1:T], 0 <= g[i,t] <= G[i])
+@constraint(desp_c, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
+@constraint(desp_c, [t=1:T], sum(g[i,t] for i=1:n) + sum(def[j,t] for j=1:2) + g_bat[t] >= d[t])
+@constraint(desp_c, [t=1:T], 0 <= def[1,t] <= 0.05*d[t])
+@constraint(desp_c, [t=1:T], def[2,t] >= 0)
+@constraint(desp_c, [t=2:T], B_bat[t] == B_bat[t-1] - g_bat[t])
+@constraint(desp_c, [t=1:T], B_bat[t] <= G_bat)
+@constraint(desp_c, [t=1:T], g_bat[t] <= B_bat[t])
+@constraint(desp_c, B_bat[1] == G_bat - g_bat[1])
+
+@objective(desp_c, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T))
+status_c = solve(desp_c)
+println("Objetivo c = ", getobjectivevalue(desp_c))
+println("Déficit total c = ", sum(getvalue(def)))
+g_bateria = getvalue(g_bat)
+geracao = getvalue(g)
+deficit = getvalue(def[1,1:T]) + getvalue(def[2,1:T])
+bateria = getvalue(B_bat)
+
+#---------------------------------------------------------------------------------------------
+#Letra d)
+
+f_b = getobjectivevalue(desp_b)
+f_c = getobjectivevalue(desp_c)
+
+for N=1:365
+
+    if N>1
+        for t=T+1:T*N
+        d[t] = 60*(1 + sin(t-(T*(N-1))/12))
+        end
+    end
+
+        desp_d = Model(solver = GLPKSolverLP())
+        @variables(desp_d, begin
+        g[i=1:n,t=1:T*N] >= 0
+        def[j=1:2,t=1:T*N] >= 0
+        g_bat[t=1:T*N]
+        B_bat[t=1:T*N] >=0
+        end)
+    @constraint(desp_d, [i=1:n, t=1:T*N], 0 <= g[i,t*N] <= G[i])
+    @constraint(desp_d, [i=1:n, t=2:T], -R_down[i] <= g[i,t] - g[i,t-1] <= R_up[i])
+    @constraint(desp_d, [t=1:T], sum(g[i,t] for i=1:n) + sum(def[j,t] for j=1:2) + g_bat[t] >= d[t])
+    @constraint(desp_d, [t=1:T], 0 <= def[1,t] <= 0.05*d[t])
+    @constraint(desp_d, [t=1:T], def[2,t] >= 0)
+    @constraint(desp_d, [t=2:T], B_bat[t] == B_bat[t-1] - g_bat[t])
+    @constraint(desp_d, [t=1:T], B_bat[t] <= G_bat)
+    @constraint(desp_d, [t=1:T], g_bat[t] <= B_bat[t])
+    @constraint(desp_d, B_bat[1] == G_bat - g_bat[1])
+
+    @objective(desp_d, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T))
+    status_c = solve(desp_c)println("Objetivo c = ", getobjectivevalue(desp_d))
+
+    println("Déficit total c = ", sum(getvalue(def)))
+    g_bateria = getvalue(g_bat)
+    geracao = getvalue(g)
+    deficit = getvalue(def[1,1:T]) + getvalue(def[2,1:T])
+    bateria = getvalue(B_bat)
+
+end
