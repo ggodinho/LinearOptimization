@@ -21,7 +21,7 @@ for i=1:n
     R_down[i] = i
 end
 
-d = ones(Float64,T*N)
+d = ones(Float64,T)
 for t=1:T
     global d[t] = 60*(1 + sin(t/12))
 end
@@ -70,6 +70,7 @@ f_c = getobjectivevalue(desp_c)
 println("Custo total sem a bateria = ", round(f_b,2))
 println("Custo total com a bateria = ", round(f_c,2))
 
+#Descobrindo o menor valor de N
     for N=1:365
         if f_b >= f_c + X/N
         println("N = ",N)
