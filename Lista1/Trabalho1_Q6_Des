@@ -33,8 +33,8 @@ for i=1:n, j=1:p
 end
 x = norm
 
-@constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b + y[i] - Erro[i])
-@constraint(class, [i=n_B+1:n, j=1:p], sum(a[j]*x[i,j] for j=1:p) >= b + y[i] + Erro[i])
+@constraint(class, [i=1:n_B, j=1:p], sum(a[j]*x[i,j] for j=1:p) <= b -1 + Erro[i])
+@constraint(class, [i=n_B+1:n, j=1:p], sum(a[j]*x[i,j] for j=1:p) >= b - Erro[i])
 # @constraint(class, [j=1:p], a[j] <= par[j])
 # @constraint(class, [j=1:p], -a[j] <= par[j])
 

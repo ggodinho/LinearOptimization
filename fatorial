@@ -1,0 +1,13 @@
+workspace()
+
+n=15
+y=1
+function fator(y)
+for i=1:n
+    y=y*i
+
+end
+return y
+end
+w = fator(y)
+print("Fatorial de $n = $w")

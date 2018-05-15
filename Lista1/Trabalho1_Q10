@@ -1,0 +1,23 @@
+#Trabalho 1 - Questão 10
+
+using Plots
+#workspace()
+
+f(x) = min(log(x), 2-x, 4-x^2)
+plot(f)
+
+t = 10
+a1 = log(t)
+a2 = 2-t
+a3 = 4-t^2
+alpha = 0.5
+x1 = 10
+x2 = 5
+
+y1 = f(alpha*x1 + (1-alpha)*x2)
+y2 = alpha*f(x1) + (1-alpha)*f(x2)
+
+
+println("a1 = ", a1)
+println("a2 = ", a2)
+println("a3 = ", a3)

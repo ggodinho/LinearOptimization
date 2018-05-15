@@ -1,0 +1,50 @@
+A = [2 1 1 0;1 2 0 1]
+b = [4;4]
+c = [4;3;0;0]
+m,n = size(A)
+#Base inicial = origem
+varB = [3,4]
+varN = [1,2]
+
+B = A[:,varB]
+N = A[:,varN]
+cB = c[varB]
+cN = c[varN]
+
+y = B'\cB # verificar se existe método melhor para resolver o sistema linear
+cRed = (cN' - y'*N)'
+cRedMax = maximum(cRed)
+#O maior valor do custo reduzido nãoé negativo, logo continue.
+
+#ENTRA NO LOOP DO SIMPLEX = ENQUANTO O CRED NAO FOR NAO POSITIVO (<=0) continue
+#*******************************
+#iteracao 1 do SIMPLEX
+#*******************************
+#1) ESCOLHA A VARIAVEL NAO BASICA QUE DEVE ENTRAR NA BASE.
+j = 1
+#ESCOLHEMOS O X1 PQ ELE, POR EXEMPLO, TEM MAIOR CUSTO RED. VER REGRA DE BLAND PARA NAO CICLAR
+
+#2) VERIFICAR A VARIAVEL BASICA QUE DEVE SAIR DA BASE: REGRA DA RAZAO
+xB = B\b
+d = -B\N[:,j]
+#Se d >= 0, pare, problema ilimitado.
+r = xB./(-d) #cuidado, pegar o menor que seja positivo
+#Identificamos que a variavel 1 foi a menor. Logo sai s1.
+i = 1
+
+#3)TROCAR DE BASE e calcule o cRed para condicao do loop.
+aux = varB[i]
+varB[i] = varN[j]
+varN[j] = aux
+B = A[:,varB]
+N = A[:,varN]
+cB = c[varB]
+cN = c[varN]
+y = B'\cB # verificar se existe método melhor para resolver o sistema linear
+cRed = (cN' - y'*N)'
+cRedMax = maximum(cRed)
+#VOLTA PARA O INICIO DO LOOP
+
+#para retornar o x* remonte x da seguinte forma:
+x = zeros(Float64,n)
+x[varB] = B\b

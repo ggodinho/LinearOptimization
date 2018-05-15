@@ -1,5 +1,5 @@
-#Trabalho 1 - Questão 3, letra d
-using JuMP, GLPKMathProgInterface, Plots
+#Trabalho 1 - Questão 3, letra e, caso houvesse acoplamento temporal entre os N dias
+using JuMP, GLPKMathProgInterface
 
 #Declarando as variáveis
 n = 10
@@ -23,7 +23,7 @@ for i=1:n
     R_down[i] = i
 end
 
-for N=1:4
+for N=1:365
         d = ones(Float64,T*N)
         h = N
         for t=1:T, h=1:N
@@ -31,7 +31,6 @@ for N=1:4
         end
 
         #Modelo sem a bateria
-
         desp_b = Model(solver = GLPKSolverLP())
         @variables(desp_b, begin
         g[i=1:n,t=1:T*N] >= 0
@@ -45,7 +44,6 @@ for N=1:4
         @objective(desp_b, Min, sum(c[i]*g[i,t] for i=1:n, t=1:T*N) + sum(C_def[j]*def[j,t] for j=1:2, t=1:T*N))
 
         #Modelo com a bateria
-
         desp_c = Model(solver = GLPKSolverLP())
         @variables(desp_c, begin
             g[i=1:n,t=1:T*N] >= 0
@@ -69,11 +67,8 @@ for N=1:4
         global f_b = getobjectivevalue(desp_b)/N
         global status_c = solve(desp_c)
         global f_c = getobjectivevalue(desp_c)/N
-        global g_bateria = getvalue(g_bat)
-        global geracao = getvalue(g)
-        global deficit = getvalue(def[1,1:T*N]) + getvalue(def[2,1:T*N])
-        global bateria = getvalue(B_bat)
 
+    #Verificando se ao final de N dias, o custo do despacho com a bateria é inferior
         if f_b >= f_c
              println("N = ",N)
              break

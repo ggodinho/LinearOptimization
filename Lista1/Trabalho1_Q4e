@@ -1,0 +1,35 @@
+#Trabalho 1, QUestão 4, letra f
+using GLPKMathProgInterface, JuMP
+
+#Declarando os dados do problema
+r_LR = 0.1
+N = 4
+r_CR = [0.4, -0.1, 0.2, -0.05]
+p = [0.1, 0.2, 0.3, 0.4]
+Q = 10000
+K = 2
+IR = [0.15, 0.27]
+L_k = [3500, Inf]
+P = 1000
+T = 40
+r_CRT(t) = 0.1*sin(t/6)
+
+#modelo de otimização
+maxlucro = Model(solver = GLPKSolverLP())
+@variable(maxlucro, 0 <= Q_LR <= Q) #Montante investido no ativo livre de risco
+@variable(maxlucro, 0 <= Q_CR <= Q) #Montante investido no ativo com risco
+@variable(maxlucro, L_A[k=1:K,c=1:N] <= L_k[k]) #lucro antes do IR
+@variable(maxlucro, L_D[c=1:N]) #Lucro após IR
+
+@constraint(maxlucro, Q_LR + Q_CR == Q)
+@constraint(maxlucro, [c=1:N], sum(L_A[k,c] for k=1:K) == Q_CR*(r_CR[c]) + Q_LR*(r_LR))
+@constraint(maxlucro, [c=1:N], L_D[c] == sum(L_A[k,c]*(1-IR[k]) for k=1:K))
+@constraint(maxlucro, 0 .<= L_A[k=2:K,c=1:N])
+@constraint(maxlucro, [t=1:T], Q_CR*r_CRT(t) + Q_LR*(r_LR) >= -P)
+
+@objective(maxlucro, Max, sum(L_D[c]*p[c] for c=1:N)) #Valor esperado
+status = solve(maxlucro)
+
+println("Lucro líquido = ", getobjectivevalue(maxlucro))
+println("Investimento com risco = ", abs(getvalue(Q_CR)))
+println("Investimento livre de risco = ", getvalue(Q_LR))

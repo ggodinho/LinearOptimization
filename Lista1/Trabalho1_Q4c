@@ -7,10 +7,9 @@ p = [0.1, 0.2, 0.3, 0.4]
 Q = 10000
 K = 2
 IR = [0.15, 0.27]
+# L[1] = 3500
 L_k = [3500, Inf]
 P = 1000
-T = 40
-r_CRT(t) = 0.1*sin(t/6)
 # L_A = ones(K)
 
 maxlucro = Model(solver = GLPKSolverLP())
@@ -26,8 +25,6 @@ maxlucro = Model(solver = GLPKSolverLP())
 @constraint(maxlucro, [c=1:N], sum(L_A[k,c] for k=1:K) == Q_CR*(r_CR[c]) + Q_LR*(r_LR))
 @constraint(maxlucro, [c=1:N], L_D[c] == sum(L_A[k,c]*(1-IR[k]) for k=1:K))
 @constraint(maxlucro, 0 .<= L_A[k=2:K,c=1:N])
-@constraint(maxlucro, [t=1:T], Q_CR*r_CRT(t) + Q_LR*(r_LR) >= -P)
-
 
 @objective(maxlucro, Max, sum(L_D[c]*p[c] for c=1:N))
 status = solve(maxlucro)
@@ -40,4 +37,3 @@ status = solve(maxlucro)
 # teste_LA = Q_CR*(r_CR[c]) + Q_LR*(r_LR)
 # teste_LD = teste_LA[c=1:N]*(1-IR[1])
 # teste_obj = sum(teste_LD[c]*p[c] for c=1:N)
-#

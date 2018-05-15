@@ -1,0 +1,25 @@
+#Função para sortear 10x uma moeda cara ou coroa. Se cair cara 3x seguidas, paga-se 1 dólar.
+
+workspace()
+k=10
+n=randn(k)
+p=0
+j=k
+
+function caracoroa(n)
+for i=1:k
+    if n[i]<=0
+    n[i]=0
+    else
+    n[i]=1
+    end
+    #1 = cara e 0 = coroa
+
+end
+end
+    b=caracoroa(n)
+     for i=3:j
+     if n[i]+n[i-1]+n[i-2]==3
+         p=1
+     end
+ end

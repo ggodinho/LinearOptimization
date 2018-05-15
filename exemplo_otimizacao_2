@@ -1,0 +1,35 @@
+#Tarefa 2 - Questão 2
+using JuMP
+using GLPKMathProgInterface
+#workspace()
+
+despacho1 = Model(solver = GLPKSolverLP())
+n = 10
+D = 56
+j = n
+
+g = zeros(n)
+for i=1:n
+g[i] = n
+n = n-1
+end
+
+n = j
+
+@variable(despacho1, c[1:n])
+#@variable(despacho1, g[i=1:n], lowerbound = 1, start = n-i+1, upperbound = n)
+@variable(despacho1, g[i] = n, for i=n:-1:1
+@variable(despacho1, g[n:-1:1])
+
+
+
+@objective(m, Max, 4x + 3y)
+@constraint(m, 2x + y <=4)
+@constraint(m, x + 2y <=4)
+
+print(m)
+status = solve(m)
+
+println("Valor objetivo: ", getobjectivevalue(m))
+println("x = ", getvalue(x))
+println("y = ", getvalue(y))

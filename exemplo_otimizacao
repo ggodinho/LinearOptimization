@@ -1,0 +1,20 @@
+#Função MAX do Módulo 1
+#Tarefa 2 - Questão 1
+
+using JuMP
+using GLPKMathProgInterface
+
+m = Model(solver = GLPKSolverLP())
+@variable(m, x >=0)
+@variable(m, y >=0)
+
+@objective(m, Max, 4x + 3y)
+@constraint(m, 2x + y <=4)
+@constraint(m, x + 2y <=4)
+
+print(m)
+status = solve(m)
+
+println("Valor objetivo: ", getobjectivevalue(m))
+println("x = ", getvalue(x))
+println("y = ", getvalue(y))

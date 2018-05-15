@@ -1,0 +1,142 @@
+model 'Best K-subset selection in linear classification'
+uses 'mmetc'
+uses 'mmxprs'
+uses 'mmsystem'
+uses "mmive"
+uses "mmnl"
+uses 'mmodbc'
+
+
+!REFERENCE:
+![A] Bertsimas, "Statistical and Machine Learning via a Modern Optimization Lens", 2014, INFORMS Annual Meeting, San Francisco.
+!Database title: Wisconsin Diagnostic Breast Cancer (WDBC) 
+
+parameters
+
+	nTotal = 569				!Number of observations.
+	n = 400					!Number of obs for tranning the classifier 
+	p = 30					!Number of features - independent varaivles
+	k = 3					!Maximum number of features in the regression 
+	path = '.\'				!Diretório de dados e saídas
+	M = 2000.0				!BigM
+	Gamma = 0				!Robustness parameter: number of features that can deviate from nominal
+	alpha = 0.05			!Deviation of features
+	LASSO_Pen = 20
+end-parameters
+
+declarations
+	!SETS
+	N = 1..n
+	P = 1..p
+	!Vectors and matrixes
+	y: array(N) of real
+	X: array(N,P) of real
+	a: array(P) of mpvar
+	b: mpvar
+	z: array(P) of mpvar
+	e_flag: array(N) of mpvar
+	SOSa: array(P) of linctr
+	SOSb: array(P) of linctr 
+	beta: array(1..(p+1)) of real
+	e: array(N) of mpvar
+	a_abs: array(P) of mpvar
+	max_e2: mpvar
+	max_e: mpvar
+	MaxProb_e12: mpvar
+	
+	lamb: array(N) of mpvar
+	v: array(N,P) of mpvar
+	h: array(P) of mpvar
+	
+end-declarations
+
+
+diskdata(ETC_IN,path+'y.csv',y)
+diskdata(ETC_IN,path+'X_norm.csv',X)
+
+!--------------------------------------------------------
+!Best subset of features selection: 
+!--------------------------------------------------------
+
+
+!ObjFunc:= (lamb*N_e1 + (1-lamb)*N_e2)
+(!
+ObjFunc:= MaxProb_e12
+MaxProb_e12 >= sum(i in N|y(i)=1) e_flag(i)/(sum(ii in N)y(ii))
+MaxProb_e12 >= sum(i in N|y(i)=0) e_flag(i)/(sum(ii in N)(1-y(ii)))
+!forall(i in N) e_flag(i) is_binary
+!)
+
+ObjFunc:= sum(i in N)e(i) + LASSO_Pen*sum(j in P)a_abs(j)
+
+forall(j in P) a_abs(j) >= a(j)
+forall(j in P) a_abs(j) >= -a(j)
+
+forall(i in N) do
+	if(y(i)=1) then !Maligno (positivo)
+		sum(j in P)a(j)*X(i,j) - alpha*(lamb(i)*Gamma + sum(j in P)v(i,j)) >=b + 1 - e(i) !Falso negativo (erro II)
+		e(i) <= M*e_flag(i)
+	else !Benigno (Negativo)
+		sum(j in P)a(j)*X(i,j) + alpha*(lamb(i)*Gamma + sum(j in P)v(i,j))  <= b + e(i) !Falso positvo (erro I)
+		e(i) <= M*e_flag(i)
+	end-if		
+end-do
+
+!Robustness against small variations on observed data
+(!forall(i in N, j in P) lamb(i)+v(i,j) >= X(i,j)*h(j)
+forall(j in P) a(j) <= h(j)
+forall(j in P) a(j) >= -h(j)
+
+
+
+!forall(i in N| y(i)=0) max_e1 >= e(i)!Maior erro tipo I
+!forall(i in N| y(i)=1) max_e2 >= e(i)!Maior erro tipo II
+!forall(i in N) max_e >= e(i)
+!)
+
+forall(j in P) a(j) is_free
+forall(j in P) b is_free
+
+
+!Variable selection: number of coef>0 <= k
+(!
+forall(j in P) z(j) is_binary
+forall(j in P) SOS_AngUB(j):= a(j) <= z(j)*M
+forall(j in P) SOS_AngLB(j):= a(j) >= -z(j)*M
+sum(j in P) z(j) <= k
+forall(j in P) a(j)<= M
+forall(j in P) a(j)>= -M 
+!)
+
+setparam("XPRS_OPTIMALITYTOL",1e-8)
+minimize(XPRS_DUAL,ObjFunc)
+
+beta(1):= getsol(b)
+forall(j in 2..(p+1)) beta(j) := getsol(a(j-1))
+
+diskdata(ETC_OUT,path+'beta.csv',beta)
+diskdata(ETC_OUT,path+'erro.csv',e)
+
+
+writeln("z - a(j) = value")
+writeln("b = ", getsol(b))
+forall(j in 2..(p+1)) writeln(getsol(z(j-1)), " | a(",j-1,") = ", beta(j)) 
+writeln("FOBJ = ", getobjval)
+
+!Exemplo de codigo para fazer um gráfico.
+(!declarations
+	graph : integer
+end-declarations
+
+
+graph:=IVEaddplot("E(y(t)) vs y(t-1)",IVE_BLUE)		!Create a graph
+forall(t in tini..T) IVEdrawpoint(graph,y(t-1),yest(t))
+!--------------------------------------------------------
+!)
+
+
+
+
+
+
+end-model

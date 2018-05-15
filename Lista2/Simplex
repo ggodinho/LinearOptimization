@@ -1,0 +1,49 @@
+#Lista 2 - Implementando Simplex
+#Problema 1
+
+A = [2 1 1 0; 1 2 0 1]
+b = [4;4]
+c = [4; 3; 0; 0]
+m,n = size(A)
+#Origem
+orig_B = [3,4]
+orig_N = [1,2]
+
+B = A[:,orig_B]
+N = A[:,orig_N]
+cB = c[orig_B]
+cN = c[orig_N]
+
+y = B'\cB
+cRed = (cN' - y'*N)'
+cRedMax = indmax(cRed)
+
+#Começando o processo iterativo
+j = cRedMax
+xB = B\b
+d = -B\N[:,j]
+
+#Selecionando o menor valor não negativo para r
+r = xB./(-d)
+k = (size(r))
+k = k[1]
+for k=1:k
+    if r[k] < 0
+        r[k] = NaN
+    end
+end
+i = indmin(r)
+
+aux = orig_B[i]
+orig_B[i] = orig_N[j]
+orig_N[j] = aux
+B = A[:,orig_B]
+N = A[:,orig_N]
+cB = c[orig_B]
+cN = c[orig_N]
+y = B'\cB
+cRed = (cN' - y'*N)'
+cRedMax = indmax(cRed)
+
+x = zeros(Float64,n)
+x[orig_B] = B\b
