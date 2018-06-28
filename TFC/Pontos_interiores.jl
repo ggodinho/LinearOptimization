@@ -11,20 +11,23 @@ x = [10; 20; 5; 5]
 y = [5; 5]
 s = [5;5;5;5]
 erro = 1/10^5
-iter_max = 1000
+iter_max = 100
 x_1 = zeros(iter_max+1)
 x_2 = zeros(iter_max+1)
 beta_p = 0.0
 beta_d = 0.0
 d_x = 0.0
+viab_primal = A*x - b == 0
+viab_dual = A'y - s - c
 
 for k = 0:iter_max
         #Teste de otimalidade
-    if A*x - b == 0
-        if A'y - s - c == erro
-    elseif abs(s'*x) < erro
-         solution = 1
-         break
+    viab_primal = maximum(A*x - b) < erro
+    viab_dual = maximum(A'y - s - c) < erro
+
+    if abs(s'*x) < erro
+        solution = 1
+        break
     end
 
     #Metodo de Newton
